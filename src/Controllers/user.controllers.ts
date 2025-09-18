@@ -33,31 +33,34 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) =>{
  * @access  Public
  */
 
-export const loginUser = async (req: Request, res: Response) => {
-   try {
-    const { name, email, password } = req.body;
+export const loginUser = asyncHandler( async (req: Request, res: Response) => {
+  
+    const { identifier, password } = req.body;
+    console.log(identifier, password);
+    
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide email and password' });
+    if (!identifier || !password) {
+      throw new ApiError(400, 'Please provide an email/name and password');
     }
 
-    const user = await User.findOne({email});
+    const user = await User.findOne({
+      $or: [{email: identifier}, {name:identifier}]
+    }).select("+password");
+
     if(!user){
-      return res.status(401).json({success: false, message: "User not found! credential invalid"});
+      throw new ApiError(401, 'Invalid credentials');
     }
 
     const isPasswordMatched  = await user.comparePassword(password);
     if (!isPasswordMatched ) {
-      return res.status(401).json({success: false, message: "User not found! credential invalid"});
+      throw new ApiError(401, 'Invalid credentials');
     }
 
     sendToken(user, 201, res); // This would send a JWT back
 
     res.status(201).json({success: true, message: "User successful login"})
-   } catch (error) {
-    res.status(500).json({ success: false, message: error });
-   }
-};
+   
+});
 
 /**
  * @desc    Logout user
@@ -65,7 +68,7 @@ export const loginUser = async (req: Request, res: Response) => {
  * @access  Private
  */
 
-export const logoutUser = async (req: Request, res: Response) => { 
+export const logoutUser = asyncHandler(async (req: Request, res: Response) => { 
   // Logic to clear the cookie containing the JWT
   res.cookie('token', null, {
     expires: new Date(Date.now()),
@@ -76,4 +79,4 @@ export const logoutUser = async (req: Request, res: Response) => {
     success: true,
     message: 'Logged out successfully',
   });
-}
+})

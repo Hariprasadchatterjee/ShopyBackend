@@ -1,8 +1,9 @@
-import { NextFunction, Request, Response } from "express";
+import {  Request, Response } from "express";
 import { ApiError } from "../utils/ApiError";
+// import { ApiError } from "../utils/ApiError";
 
 
-export const errorHandler = (err: any, req: Request,res: Response, next: NextFunction)=>{
+export const errorHandler = (err: any, req: Request,res: Response)=>{
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
 
