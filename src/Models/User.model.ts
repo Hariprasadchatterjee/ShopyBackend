@@ -1,9 +1,11 @@
-import bcrypt from "bcryptjs";
+
 import mongoose, { Document, Model, Schema } from "mongoose";
-import validator from "validator";
 import jwt from "jsonwebtoken";
+import { config } from "../config/config";
+import bcrypt from "bcryptjs";
+import validator from "validator";
 import crypto from "crypto";
-import { config } from "../src/config/config";
+
 
 export interface IAddress extends Document {
   street: string;
@@ -13,6 +15,7 @@ export interface IAddress extends Document {
   country: string;
 }
 export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId;
   name: string;
   email: string;
   password: string;
@@ -26,7 +29,8 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(enteredPassword: string): Promise<boolean>;
-  getJwtToken(): string;
+  getJwtToken(): string
+  getResetPasswordToken(): string;
 }
 
 const addressSchema = new Schema<IAddress>({
@@ -102,19 +106,28 @@ userSchema.methods.comparePassword = async function (
 };
 
 // 3. Method to generate a JWT for authentication
-userSchema.methods.getJwtToken = function (): string {
-  // Check if the secret is defined
-  const secret = config.jwt_secret;
-  const expires = config.jwt_expiresIn;
-  if (!secret || !expires) {
-    throw new Error(`secret ${secret} and expiresIn ${expires} `)
-  } 
+userSchema.methods.getJwtToken = function ():string  {
+  try {
+    const payload = {
+    id: this._id.toString(),
+  }; 
+ 
+ const options = {
+    expiresIn: parseInt(config.jwt_expiresIn) 
+  };
 
-  return jwt.sign({ id: this._id }, secret, {
-    expiresIn: expires,
-  });
+  return jwt.sign(
+    payload,
+    config.jwt_secret,
+    options
+  );
+  } catch (error) {
+     console.error('Error generating auth token:', error);
+    throw new Error('Failed to generate authentication token');
+  }
+   
+    
 };
-
 // 4. Method to generate a password reset token
 userSchema.methods.getResetPasswordToken = function (): string {
   // Hash and set Reset password Token field
