@@ -1,46 +1,54 @@
-import mongoose, {  Model, Schema } from "mongoose";
-import validator from "validator"
+import bcrypt from "bcryptjs";
+import mongoose, { Document, Model, Schema } from "mongoose";
+import validator from "validator";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { config } from "../src/config/config";
 
-export interface IAddress extends Document{
-  street:string;
-  city:string;
-  state:string;
-  pinCode:string;
-  country:string;
+export interface IAddress extends Document {
+  street: string;
+  city: string;
+  state: string;
+  pinCode: string;
+  country: string;
 }
-export interface IUserSchema extends Document{
-  name:string;
+export interface IUser extends Document {
+  name: string;
   email: string;
   password: string;
-  avatar?: {public_id: string, url:string};
-  role: 'user' | 'admin';
+  avatar?: { public_id: string; url: string };
+  role: "user" | "admin";
   addresses: IAddress[];
-  orders: mongoose.Schema.Types.ObjectId;
-  wishlist: mongoose.Schema.Types.ObjectId;
-  resetPasswordToken: string;
-  resetPasswordExpire: string
+  orders: mongoose.Schema.Types.ObjectId[];
+  wishlist: mongoose.Schema.Types.ObjectId[];
+  resetPasswordToken?: string;
+  resetPasswordExpire?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  comparePassword(enteredPassword: string): Promise<boolean>;
+  getJwtToken(): string;
 }
 
 const addressSchema = new Schema<IAddress>({
-  street: {type: String, required: true},
-  city: {type: String, required: true},
-  state: {type: String, required: true},
-  pinCode: {type: String, required: true},
-  country: {type: String, required: true, default: "India"}
-})
+  street: { type: String, required: true },
+  city: { type: String, required: true },
+  state: { type: String, required: true },
+  pinCode: { type: String, required: true },
+  country: { type: String, required: true, default: "India" },
+});
 
-const userSchema = new Schema<IUserSchema>(
+const userSchema = new Schema<IUser>(
   {
-    name:{
+    name: {
       type: String,
       required: [true, "please enter your name"],
-      maxLength: [50, "Your name cannot exceed 50 characters"]
+      maxLength: [50, "Your name cannot exceed 50 characters"],
     },
     email: {
       type: String,
-      required: [true, 'Please enter your email'],
+      required: [true, "Please enter your email"],
       unique: true,
-      validate: [validator.isEmail, 'please enter a valid email address']
+      validate: [validator.isEmail, "please enter a valid email address"],
     },
     password: {
       type: String,
@@ -54,23 +62,70 @@ const userSchema = new Schema<IUserSchema>(
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      enum: ["user", "admin"],
+      default: "user",
     },
     addresses: [addressSchema],
-    orders: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Order',
-    }],
-    wishlist: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product',
-    }],
+    orders: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Order",
+      },
+    ],
+    wishlist: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+      },
+    ],
     resetPasswordToken: String,
     resetPasswordExpire: Date,
   },
-  {timestamps: true}
+  { timestamps: true }
 );
 
-const myUser: Model<IUserSchema> = mongoose.model<IUserSchema>("User",userSchema);
+// --- Middleware & Methods ---
+
+// 1. Hash password before saving
+userSchema.pre<IUser>("save", async function (next) {
+  if (!this.isModified("password")) {
+    next();
+  }
+  this.password = await bcrypt.hash(this.password, 10);
+});
+
+// 2. Method to compare entered password with hashed password
+userSchema.methods.comparePassword = async function (
+  enteredPassword: string
+): Promise<boolean> {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// 3. Method to generate a JWT for authentication
+userSchema.methods.getJwtToken = function (): string {
+  // Check if the secret is defined
+  const secret = config.jwt_secret;
+  const expires = config.jwt_expiresIn;
+  if (!secret || !expires) {
+    throw new Error(`secret ${secret} and expiresIn ${expires} `)
+  } 
+
+  return jwt.sign({ id: this._id }, secret, {
+    expiresIn: expires,
+  });
+};
+
+// 4. Method to generate a password reset token
+userSchema.methods.getResetPasswordToken = function (): string {
+  // Hash and set Reset password Token field
+  const resetToken = crypto.randomBytes(20).toString("hex");
+  this.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+  this.resetPasswordExpire = Date.now() + 15 * 60 * 1000;
+
+  return resetToken;
+}
+
+
+
+const myUser: Model<IUser> = mongoose.model<IUser>("User", userSchema);
 export default myUser;
