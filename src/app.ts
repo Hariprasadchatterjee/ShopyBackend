@@ -1,4 +1,4 @@
-import  {config}  from './config/config'
+
 
 import express from 'express'
 import cors from "cors"
@@ -12,8 +12,6 @@ app.use(cors({
     origin: "",
     credentials: true
 }))
-
-  console.log("JWT Secret from config:", config.jwt_secret, config.jwt_expiresIn); // Debugging line
 
 app.use(express.json({limit:"16kb"}))
 app.use(express.urlencoded({extended: true}))

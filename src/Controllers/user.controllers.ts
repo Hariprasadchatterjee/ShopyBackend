@@ -64,7 +64,7 @@ export const loginUser = asyncHandler( async (req: Request, res: Response) => {
 
 /**
  * @desc    Logout user
- * @route   GET /api/users/logout
+ * @route   GET /api/v1/user/logout
  * @access  Private
  */
 
@@ -80,3 +80,28 @@ export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
     message: 'Logged out successfully',
   });
 })
+
+// --- USER PROFILE ROUTES ---
+
+/**
+ * @desc    Get current user profile
+ * @route   GET /api/v1/user/me
+ * @access  Private
+ */
+
+
+export const getUserProfile = asyncHandler( async (req: Request, res: Response) => {
+  // The 'isAuthenticatedUser' middleware will attach the user to req.user
+  const UserId = req.user?.id
+  console.log("UserId is",UserId);
+  
+  const user = await User.findById(UserId);
+  if (!user) {
+    throw new ApiError(404, "user not found")
+  }
+
+  res.status(200).json({
+    success: true,
+    user,
+  });
+});

@@ -22,14 +22,17 @@ export const isAuthenticatedUser = asyncHandler(async (req: Request, res: Respon
     if (!token) {
         throw new ApiError(401, "Login first to access this resource.");
     }
+    console.log("token is", token);
+    
 
     // jwt.verify will throw an error if the token is invalid or expired,
     // which asyncHandler will catch and pass to your global errorHandler.
     const decoded = jwt.verify(token, config.jwt_secret) as jwt.JwtPayload;
-
+    console.log("after verify token is", decoded);
     // Find the user based on the ID from the token
     const user = await myUser.findById(decoded.id);
-
+    console.log("user is",user);
+    
     if (!user) {
         throw new ApiError(401, "Invalid token: user not found.");
     }

@@ -113,7 +113,7 @@ userSchema.methods.getJwtToken = function ():string  {
   }; 
  
  const options = {
-    expiresIn: parseInt(config.jwt_expiresIn) 
+    expiresIn: (config.jwt_expiresIn || "7d") as jwt.SignOptions['expiresIn']
   };
 
   return jwt.sign(
