@@ -28,6 +28,9 @@ export const isAuthenticatedUser = asyncHandler(async (req: Request, res: Respon
     // jwt.verify will throw an error if the token is invalid or expired,
     // which asyncHandler will catch and pass to your global errorHandler.
     const decoded = jwt.verify(token, config.jwt_secret) as jwt.JwtPayload;
+    if (!decoded.id) {
+        throw new ApiError(401, "Invalid token.");
+    }
     console.log("after verify token is", decoded);
     // Find the user based on the ID from the token
     const user = await myUser.findById(decoded.id);
@@ -44,9 +47,9 @@ export const isAuthenticatedUser = asyncHandler(async (req: Request, res: Respon
 
 // Authorizing user roles
 export const authorizeRole = (...roles: string[]) =>{
-  return (req: any, res: Response, next: NextFunction) =>{
-     if (!roles.includes(req.user.role)) {
-        throw new ApiError(403, `Role (${req.user.role}) is not allowed to access this resource.`)
+  return (req: Request, res: Response, next: NextFunction) =>{
+     if ( !req.user || !roles.includes(req.user.role)) {
+        throw new ApiError(403, `Role (${req.user?.role}) is not allowed to access this resource.`)
     }
     next();
   }

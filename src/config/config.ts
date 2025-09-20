@@ -11,10 +11,15 @@ conf()
 const _config = {
   port: process.env.PORT,
   mongo_url: process.env.MONGO_URL as string,
+  node_env: process.env.NODE_ENV,
+
   jwt_secret: process.env.JWT_SECRET as string ,
   jwt_expiresIn: process.env.JWT_EXPIRES_TIME as string ,
   cookie_expireIn: process.env.COOKIE_EXPIRES_TIME,
-  node_env: process.env.NODE_ENV,
+
+ sendgrid_api_key: process.env.SENDGRID_API_KEY || '',
+  email_from: process.env.EMAIL_FROM || 'noreply@example.com',
+  client_url: process.env.CLIENT_URL || 'http://localhost:3000',
 }
 
 // Add a check to ensure variables are loaded
