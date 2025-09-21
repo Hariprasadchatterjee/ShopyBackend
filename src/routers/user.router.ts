@@ -6,8 +6,12 @@ import {
   getUserProfile,
   forgotPassword,
   resetPassword,
+  getAllUsers,
+  getSingleUser,
+  updateUserRole,
+  deleteUser,
 } from "../Controllers/user.controllers";
-import { isAuthenticatedUser } from "../Middlewares/auth";
+import { authorizeRole, isAuthenticatedUser } from "../Middlewares/auth";
 
 const userRouter = express.Router();
 
@@ -24,5 +28,14 @@ userRouter.route("/reset_password/:token").put(resetPassword);
 userRouter.route("/me").get(isAuthenticatedUser, getUserProfile);
 
 // --- Admin Only Routes ---
+userRouter
+  .route("/admin/users")
+  .get(isAuthenticatedUser, authorizeRole("admin"), getAllUsers);
+
+userRouter
+  .route("/admin/user/:id")
+  .get(isAuthenticatedUser, authorizeRole("admin"), getSingleUser)
+  .put(isAuthenticatedUser, authorizeRole("admin"), updateUserRole)
+  .delete(isAuthenticatedUser, authorizeRole("admin"), deleteUser);
 
 export default userRouter;

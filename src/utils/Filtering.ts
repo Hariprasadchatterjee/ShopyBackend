@@ -1,9 +1,18 @@
 import mongoose from "mongoose";
 
+interface QueryString {
+  keyword?: string;
+  page?: string;
+  limit?: string;
+  sort?: string;
+  fields?: string;
+  [key: string]: any;
+}
 export class ApiFilters {
-  public query: mongoose.Query<any[], any>;
+  public query: mongoose.Query<QueryString[], QueryString>;
   private queryStr: any;
-  constructor(query, queryStr) {
+
+  constructor(query: mongoose.Query<QueryString[], QueryString>, queryStr: QueryString) {
     this.query = query;
     this.queryStr = queryStr;
   }

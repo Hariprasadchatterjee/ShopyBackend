@@ -111,7 +111,7 @@ export const forgotPassword = asyncHandler(
         <p><a href="${resetUrl}">Reset Password</a></p>
         <p>This link will expire in 15 minutes.</p>
         <p>If you didn't request this, please ignore this email.</p>`;
-      
+
     await sendEmail(email, "Password reset Request", emailBody);
 
     res.status(200).json({
@@ -132,10 +132,10 @@ export const resetPassword = async (req: Request, res: Response) => {
   const { password } = req.body;
   const { token } = req.params;
   console.log("password and token is", password, token);
-  
+
   if (!token) {
     // throw new ApiError(400, "token is invalid");
-   throw new ApiError(404, "Token is missing");
+    throw new ApiError(404, "Token is missing");
   }
   // 1. Hash the incoming token to match the one in DB
   const verifyToken = crypto.createHash("sha256").update(token).digest("hex");
@@ -151,17 +151,17 @@ export const resetPassword = async (req: Request, res: Response) => {
   }
 
   if (req.body.password !== req.body.confirmPassword) {
-        throw new ApiError(400, "Passwords do not match");
-    }
+    throw new ApiError(400, "Passwords do not match");
+  }
 
-   // 2. Set new password
+  // 2. Set new password
   user.password = password;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
   await user.save();
 
   // 3. Log the user in
-    sendToken(user, 200, res);
+  sendToken(user, 200, res);
 
   res.status(200).json({
     success: true,
@@ -195,4 +195,79 @@ export const getUserProfile = asyncHandler(
   }
 );
 
-// --- ADMIN ROUTES ---
+// --- ADMIN ROUTES CONTROLLERS ---
+
+/**
+ * @desc    Get All users(Admin)
+ * @route   GET /api/v1/user/admin/users
+ * @access  Private
+ */
+export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
+  const users = await User.find();
+  res.status(200).json({ success: true, users });
+});
+
+/**
+ * @desc    Get single user details(Admin)
+ * @route   GET /api/v1/user/admin/user/:id
+ * @access  Private
+ */
+export const getSingleUser = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, `user not found with id ${userId}`);
+    }
+    res.status(200).json({ success: true, user });
+  }
+);
+
+/**
+ * @desc    update user role(Admin)
+ * @route   GET /api/v1/user/admin/user/:id
+ * @access  Private
+ */
+export const updateUserRole = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { name, email, role } = req.body;
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, `user not found with id ${userId}`);
+    }
+
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.role = role || user.role;
+
+    await user.save({ validateBeforeSave: true });
+    res
+      .status(200)
+      .json({ success: true, message: "User updated successfully" });
+  }
+);
+
+/**
+ * @desc    Delete user (Admin)
+ * @route   GET /api/v1/user/admin/user/:id
+ * @access  Private
+ */
+export const deleteUser = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.params.id;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, `user not found with id ${userId}`);
+    }
+
+    // Here you might also want to remove associated data, like their avatar from a cloud service.
+
+    await user.deleteOne();
+    res
+      .status(200)
+      .json({ success: true, message: "User deleted successfully" });
+  
+  }
+);

@@ -48,7 +48,9 @@ export const isAuthenticatedUser = asyncHandler(async (req: Request, res: Respon
 // Authorizing user roles
 export const authorizeRole = (...roles: string[]) =>{
   return (req: Request, res: Response, next: NextFunction) =>{
-     if ( !req.user || !roles.includes(req.user.role)) {
+    
+    if ( !req.user || !roles.includes(req.user.role)) {
+       console.log("loginUser", req.user);
         throw new ApiError(403, `Role (${req.user?.role}) is not allowed to access this resource.`)
     }
     next();
