@@ -17,9 +17,13 @@ const _config = {
   jwt_expiresIn: process.env.JWT_EXPIRES_TIME as string ,
   cookie_expireIn: process.env.COOKIE_EXPIRES_TIME,
 
- sendgrid_api_key: process.env.SENDGRID_API_KEY || '',
+  sendgrid_api_key: process.env.SENDGRID_API_KEY || '',
   email_from: process.env.EMAIL_FROM || 'noreply@example.com',
   client_url: process.env.CLIENT_URL || 'http://localhost:3000',
+
+  cloudinary_cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+  cloudinary_apiKey: process.env.CLOUDINARY_API_KEY,
+  cloudinary_apiSecret: process.env.CLOUDINARY_API_SECRET,
 }
 
 // Add a check to ensure variables are loaded

@@ -6,6 +6,9 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { config } from "../config/config";
 import sendEmail from "../utils/sendEmail";
 import crypto from "crypto";
+import cloudinary from "../config/cloudinary";
+import DataURIParser from "datauri/parser";
+import path from "path";
 
 /**
  * @desc Register a new user
@@ -195,6 +198,112 @@ export const getUserProfile = asyncHandler(
   }
 );
 
+/**
+ * @desc    Post changeUserPassword
+ * @route   POST /api/v1/user/me
+ * @access  Private
+ */
+export const changeUserPassword = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { oldPassword, newPassword } = req.body;
+    const UserId = req.user?.id;
+    console.log("UserId is", UserId);
+
+    const user = await User.findById(UserId);
+    if (!user) {
+      throw new ApiError(404, "user not found");
+    }
+
+    const isPasswordMatch = await user.comparePassword(oldPassword);
+    if (!isPasswordMatch) {
+      throw new ApiError(404, "Old password is invalid");
+    }
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
+    res.status(200).json({
+      success: true,
+      message: "password changed successfully",
+    });
+  }
+);
+
+/**
+ * @desc    Post AddUserAvatar
+ * @route   POST /api/v1/user/me
+ * @access  Private
+ */
+export const AddUserAvatar = asyncHandler(
+  async (req: Request, res: Response) => {
+    // 1. Check if a file was uploaded
+    if (!req.file) {
+      throw new ApiError(
+        400,
+        "No file uploaded. Please select an avatar image."
+      );
+    }
+    const UserId = req.user?.id;
+    console.log("UserId is", UserId);
+
+    const user = await User.findById(UserId);
+    if (!user) {
+      throw new ApiError(404, "user not found");
+    }
+
+    // 3. Delete the old avatar from Cloudinary if it exists
+    if (user.avatar && user.avatar.public_id) {
+      await cloudinary.uploader.destroy(user.avatar.public_id);
+    }
+
+    // 4. Convert the buffer to a Data URI
+    const parser = new DataURIParser();
+    const fileExtention = path.extname(req.file.originalname).toString();
+    const fileDataUri = parser.format(fileExtention, req.file.buffer);
+
+    if (!fileDataUri.content) {
+      throw new ApiError(500, "Could not process the file buffer.");
+    }
+    // 5. Upload the new avatar to Cloudinary
+
+    const result = await cloudinary.uploader.upload(fileDataUri.content, {
+      folder: "avatars",
+      resource_type: "image",
+    });
+
+    // 6. Update the user's avatar information in the database
+
+    user.avatar = {
+      public_id: result.public_id,
+      url: result.secure_url,
+    };
+    await user.save({ validateBeforeSave: true });
+    res.status(200).json({
+      success: true,
+      message: "Avatar uploaded successfully.",
+    });
+  }
+);
+
+/**
+ * @desc    Post AddUserAvatar
+ * @route   POST /api/v1/user/me
+ * @access  Private
+ */
+export const updateUserIdentity = asyncHandler(
+  async (req: Request, res: Response) => {
+    const {name, email} = req.body;
+    const userId = req.user?.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, `user not found with id ${userId}`);
+    }
+    user.name = name || user.name;
+    user.email = email || user.name;
+
+    await user.save({validateBeforeSave: true});
+    res.status(200).json({ success: true, user });
+  }
+);
+
 // --- ADMIN ROUTES CONTROLLERS ---
 
 /**
@@ -225,7 +334,7 @@ export const getSingleUser = asyncHandler(
 
 /**
  * @desc    update user role(Admin)
- * @route   GET /api/v1/user/admin/user/:id
+ * @route   Put /api/v1/user/admin/user/:id
  * @access  Private
  */
 export const updateUserRole = asyncHandler(
@@ -250,24 +359,22 @@ export const updateUserRole = asyncHandler(
 
 /**
  * @desc    Delete user (Admin)
- * @route   GET /api/v1/user/admin/user/:id
+ * @route   Delete /api/v1/user/admin/user/:id
  * @access  Private
  */
-export const deleteUser = asyncHandler(
-  async (req: Request, res: Response) => {
-    const userId = req.params.id;
+export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.params.id;
 
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new ApiError(404, `user not found with id ${userId}`);
-    }
-
-    // Here you might also want to remove associated data, like their avatar from a cloud service.
-
-    await user.deleteOne();
-    res
-      .status(200)
-      .json({ success: true, message: "User deleted successfully" });
-  
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, `user not found with id ${userId}`);
   }
-);
+
+  // Here you might also want to remove associated data, like their avatar from a cloud service.
+  if (user.avatar && user.avatar?.public_id) {
+      await cloudinary.uploader.destroy(user.avatar.public_id);
+  }
+
+  await user.deleteOne();
+  res.status(200).json({ success: true, message: "User deleted successfully" });
+});
