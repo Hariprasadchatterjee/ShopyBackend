@@ -1,5 +1,5 @@
 import express from "express"
-import { createProducts, getAllProducts } from "../Controllers/products.controllers";
+import { createProductReview, createProducts, deleteProduct, deleteReview, getAllProducts, getProductDetails, getProductReviews, updateProduct } from "../Controllers/products.controllers";
 import { authorizeRole, isAuthenticatedUser } from "../Middlewares/auth";
 import { upload } from "../Middlewares/multer.middleware";
 
