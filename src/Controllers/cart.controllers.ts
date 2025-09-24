@@ -46,7 +46,7 @@ export const upsertCartItem = asyncHandler(
       cart.items[existingItemIndex].quantity = quantity;
     } else {
       // Item does not exist, add it to the cart
-      cart.items.push({ product: product._id, quantity });
+      cart.items.push({ product: productId, quantity });
     }
 
     await cart.populate("items.product", "price");
