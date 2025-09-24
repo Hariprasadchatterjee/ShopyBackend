@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser"
 import userRouter from "./routers/user.router"
 import { errorHandler } from './Middlewares/ErrorHandler'
 import productRouter from './routers/product.router'
+import orderRouter from './routers/order.router'
 const app = express();
 
 app.use(cors({
@@ -21,6 +22,7 @@ app.use(cookieParser())
 
 app.use("/api/v1/user", userRouter)
 app.use("/api/v1/product", productRouter)
+app.use("/api/v1/order", orderRouter)
 
 app.use(errorHandler)
 
