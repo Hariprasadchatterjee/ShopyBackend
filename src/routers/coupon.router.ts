@@ -4,7 +4,7 @@ import {
   getAllCoupons,
   deleteCoupon,
   applyCoupon,
-} from "../Controllers/coupon.controller";
+} from "../Controllers/coupon.controllers";
 import { isAuthenticatedUser, authorizeRole } from "../Middlewares/auth";
 
 const router = Router();
