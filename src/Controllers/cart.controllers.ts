@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { asyncHandler } from "../utils/asyncHandler";
-import Cart, { ICart, ICartItem } from "../Models/Cart.model";
+import Cart, { ICart } from "../Models/Cart.model";
 import { ApiError } from "../utils/ApiError";
-import Product, { IProduct } from "../Models/Product.model";
+import Product from "../Models/Product.model";
 
 /**
  * @desc    Get the current user's cart
