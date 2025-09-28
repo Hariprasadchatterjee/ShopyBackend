@@ -3,6 +3,7 @@ import Order from "../Models/Order.model";
 import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import Product from "../Models/Product.model";
+import Coupon from "../Models/coupon.model";
 // ---------------------------------------------------------------- //
 // ----------------------- USER CONTROLLERS ----------------------- //
 // ---------------------------------------------------------------- //
@@ -36,15 +37,53 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     shippingInfo,
     orderItems,
     paymentInfo,
-    itemsPrice,
+    // itemsPrice,
     taxPrice,
     shippingPrice,
-    totalPrice,
+    // totalPrice,
+    couponCode,
   } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
     throw new ApiError(400, "Your cart is empty.");
   }
+  interface OrderItem {
+    product: string;
+    quantity: number;
+    price: number;
+  }
+
+  const itemsPrice = orderItems.reduce(
+    (acc: number, item: OrderItem) => acc + item.quantity * item.price,
+    0
+  );
+
+   let couponId = null;
+   let finalAmmount = 0
+
+  //--- Start Re-Validation for coupon ----
+  if (couponCode) {
+    
+    const coupon = await Coupon.findOne({code:couponCode});
+    if(!coupon) throw new ApiError(400, "Your coupon is invalid");
+    if (itemsPrice < coupon?.minCartValue) {
+      throw new ApiError(400, "Your are not eligible to apply coupon");
+    }
+    if (coupon.expiryDate < new Date(Date.now())) throw new ApiError(400, "Your coupon is expired no longer used");
+     // If all checks pass, calculate the discount on the backend
+      let discountAmmount = 0;
+      if (coupon.discountType === "percentage") {
+        discountAmmount = (itemsPrice * coupon.discountValue) / 100;
+      }
+      else{
+        discountAmmount = coupon.discountValue
+      }
+       finalAmmount = (itemsPrice - discountAmmount) + taxPrice + shippingPrice
+       couponId = coupon._id
+  } else {
+    finalAmmount = itemsPrice  + taxPrice + shippingPrice
+  }
+    
 
   const order = await Order.create({
     shippingInfo,
@@ -53,7 +92,8 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     itemsPrice,
     taxPrice,
     shippingPrice,
-    totalPrice,
+    totalPrice :finalAmmount,
+    couponApplied:couponId,
     paidAt: Date.now(),
     user: req.user?._id,
   });

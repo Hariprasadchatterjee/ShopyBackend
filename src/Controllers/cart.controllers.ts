@@ -21,7 +21,7 @@ export const getCart = asyncHandler(async (req: Request, res: Response) => {
 });
 
 /**
- * @desc    Add or update an item in the cart
+ * @desc    Add or update quantity of an item in the cart
  * @route   POST /api/v1/cart/item
  * @access  Private (Authenticated Users)
  */
@@ -31,6 +31,7 @@ export const upsertCartItem = asyncHandler(
 
     const product = await Product.findById(productId);
     if (!product) throw new ApiError(404, "Product not found.");
+    if(product.stock < quantity) throw new ApiError(400, "Not enough product in stock.");
 
     const cart = (await Cart.findOne({ user: req.user?.id })) as ICart | null;
     if (!cart) {

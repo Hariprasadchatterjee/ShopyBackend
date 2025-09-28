@@ -24,6 +24,7 @@ export interface IOrder extends Document{
   };
   paidAt?: Date;
   itemsPrice: number;
+  couponApplied:mongoose.Types.ObjectId;
   taxPrice: number;
   shippingPrice: number;
   totalPrice: number;
@@ -81,6 +82,10 @@ const orderSchema = new Schema<IOrder>(
       type: Number,
       required: true,
       default: 0.0,
+    },
+    couponApplied: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Coupon'
     },
     totalPrice: {
       type: Number,
