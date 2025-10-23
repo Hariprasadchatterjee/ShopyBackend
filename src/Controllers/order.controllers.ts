@@ -4,6 +4,7 @@ import { ApiError } from "../utils/ApiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import Product from "../Models/Product.model";
 import Coupon from "../Models/coupon.model";
+import Cart from "../Models/Cart.model";
 // ---------------------------------------------------------------- //
 // ----------------------- USER CONTROLLERS ----------------------- //
 // ---------------------------------------------------------------- //
@@ -37,10 +38,8 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     shippingInfo,
     orderItems,
     paymentInfo,
-    // itemsPrice,
     taxPrice,
     shippingPrice,
-    // totalPrice,
     couponCode,
   } = req.body;
 
@@ -101,6 +100,14 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   // Critical Step: Update the stock for each product in the order
   for (const item of order.orderItems) {
     await updateStock(item.product.toString(), item.quantity, true);
+  }
+
+    // --- ✅ NEW LOGIC: Clear the user's cart ---
+  const cart = await Cart.findOne({ user: req.user?._id });
+  if (cart) {
+    cart.items = [];
+    cart.subtotal = 0;
+    await cart.save();
   }
 
   res.status(201).json({ order, message: "Order placed successfully" });
